@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: flowdeck
+      POSTGRES_PASSWORD: flowdeck
+      POSTGRES_DB: flowdeck
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowdeck"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4
+    # BullMQ needs keys to never be evicted.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+
+  # Production-style containers. Start with: docker compose --profile app up --build
+  web:
+    profiles: ["app"]
+    build: .
+    command: ["node", "server.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://flowdeck:flowdeck@postgres:5432/flowdeck
+      REDIS_URL: redis://redis:6379
+    ports: ["3000:3000"]
+    depends_on: [postgres, redis]
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: .
+      target: worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://flowdeck:flowdeck@postgres:5432/flowdeck
+      REDIS_URL: redis://redis:6379
+    depends_on: [postgres, redis]
+
+volumes:
+  pgdata:
+  redisdata:

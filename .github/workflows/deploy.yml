@@ -1,0 +1,49 @@
+name: Deploy payments-api
+run-name: Deploy ${{ inputs.version }} to ${{ inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Where to deploy
+        required: true
+        options: [staging, production]
+      version:
+        type: string
+        description: Release to deploy
+        required: true
+      canary:
+        type: boolean
+        default: false
+      canary_percent:
+        type: number
+        default: 10
+      flowdeck_requested_by:
+        type: string
+        description: Filled in by FlowDeck with the person who started the run
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Building ${{ inputs.version }} for ${{ inputs.flowdeck_requested_by }}"
+  test:
+    name: Unit tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Testing"
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    # A protected environment with required reviewers makes the run wait for approval.
+    environment: ${{ inputs.environment }}
+    steps:
+      - run: echo "Deploying ${{ inputs.version }} to ${{ inputs.environment }}"

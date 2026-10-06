@@ -1,0 +1,18 @@
+# Optional FlowDeck sidecar: same file name as the workflow, under .github/flowdeck/.
+catalog:
+  description: Builds, tests and deploys the payments API. Production waits for release manager approval.
+  owner: Payments platform
+  tags: [deploy, payments]
+
+inputs:
+  version:
+    label: Version
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    patternMessage: Use a full version like 2.14.0.
+  canary:
+    label: Canary rollout
+  canary_percent:
+    label: Canary traffic (%)
+    min: 1
+    max: 50
+    visibleWhen: { input: canary, equals: "true" }
